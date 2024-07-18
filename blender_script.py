@@ -152,7 +152,7 @@ for mesh_file in mesh_files:
     base_distance = 10
     adjusted_distance = adjust_camera_distance(camera, mesh_object, base_distance)
 
-    # Define camera positions for eight angles: 
+    # Define camera positions for eight angles: still working on this
     camera_positions = {
         "front": Vector((0, -adjusted_distance, 0)),
         "back": Vector((0, adjusted_distance, 0)),
