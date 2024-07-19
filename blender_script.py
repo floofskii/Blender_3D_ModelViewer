@@ -83,6 +83,16 @@ def render_turntable(mesh_name, output_path, frame_count=250):
     bpy.ops.render.render(animation=True)
     print(f"Rendered 360-degree turntable for {mesh_name}")
 
+# Function to generate flexible camera positions depending on variable
+def generate_camera_positions(n, distance):
+    positions = {}
+    for i in range(n):
+        angle = 2 * math.pi * i / n
+        x = distance * math.cos(angle)
+        y = distance * math.sin(angle)
+        positions[f'angle_{i}'] = Vector((x, y, 0))
+    return positions
+
 # Set background color to black using Workbench
 bpy.context.scene.render.engine = 'BLENDER_WORKBENCH'
 bpy.context.scene.display.shading.light = 'STUDIO'
@@ -152,17 +162,11 @@ for mesh_file in mesh_files:
     base_distance = 10
     adjusted_distance = adjust_camera_distance(camera, mesh_object, base_distance)
 
-    # Define camera positions for eight angles: still working on this
-    camera_positions = {
-        "front": Vector((0, -adjusted_distance, 0)),
-        "back": Vector((0, adjusted_distance, 0)),
-        "left": Vector((-adjusted_distance, 0, 0)),
-        "right": Vector((adjusted_distance, 0, 0)),
-        "front-left": Vector((-adjusted_distance / 1.414, -adjusted_distance / 1.414, 0)),
-        "front-right": Vector((adjusted_distance / 1.414, -adjusted_distance / 1.414, 0)),
-        "back-left": Vector((-adjusted_distance / 1.414, adjusted_distance / 1.414, 0)),
-        "back-right": Vector((adjusted_distance / 1.414, adjusted_distance / 1.414, 0))
-    }
+     # Define number of camera positions
+    num_positions = 10  # Setting this to 10 for now
+
+    # Generate camera positions
+    camera_positions = generate_camera_positions(num_positions, adjusted_distance)
 
     # Render each predefined angle
     for position_name, position in camera_positions.items():
