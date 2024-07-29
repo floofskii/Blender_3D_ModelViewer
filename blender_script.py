@@ -96,6 +96,20 @@ def generate_camera_positions(n, distance):
         positions[f'angle_{i}'] = Vector((x, y, 0))
     return positions
 
+# Function to render flexible frames around the object
+def render_flexible_frames(mesh_name, output_path, num_positions, distance):
+    camera_positions = generate_camera_positions(num_positions, distance)
+    for position_name, position in camera_positions.items():
+        render_frame(mesh_name, position_name, position, output_path)
+
+
+# Set the frame rate and calculate total frames for the animation
+frame_rate = 12  # Desired frame rate
+animation_duration = 10  # Duration in seconds
+total_frames = frame_rate * animation_duration  # Total number of frames
+
+bpy.context.scene.render.fps = frame_rate  # Set the frame rate
+
 # Set background color to black using Workbench
 bpy.context.scene.render.engine = 'BLENDER_WORKBENCH'
 bpy.context.scene.display.shading.light = 'STUDIO'
@@ -165,18 +179,11 @@ for mesh_file in mesh_files:
     base_distance = 10
     adjusted_distance = adjust_camera_distance(camera, mesh_object, base_distance)
 
-     # Define number of camera positions
-    num_positions = 10  # Setting this to 10 for now
+    # Define number of camera positions for images
+    num_positions = 11  # setting it to 11 for test
 
-    # Generate camera positions
-    camera_positions = generate_camera_positions(num_positions, adjusted_distance)
-
-    # Render each predefined angle
-    for position_name, position in camera_positions.items():
-        render_frame(mesh_object_name, position_name, position, output_path)
-
-    # Animate 360-degree rotation
-    animate_360_rotation(mesh_object)
+    # Render flexible frames around the object
+    render_flexible_frames(mesh_object_name, output_path, num_positions, adjusted_distance)
 
     # Render the turntable animation
     render_turntable(mesh_object_name, output_path)
