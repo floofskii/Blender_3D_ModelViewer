@@ -65,18 +65,21 @@ def center_mesh_in_camera_view(camera, mesh_object):
     bpy.context.scene.camera = camera
     bpy.context.view_layer.update()
 
-#animate a 360-degree rotation
-def animate_360_rotation(mesh_object, frame_count=250):
-    bpy.context.view_layer.objects.active = mesh_object
-    mesh_object.rotation_euler = (0, 0, 0)
-    mesh_object.keyframe_insert(data_path="rotation_euler", frame=1)
-    mesh_object.rotation_euler[2] = 6.28319  # 360 degrees in radians
-    mesh_object.keyframe_insert(data_path="rotation_euler", frame=frame_count)
+# Function to rotate the camera around the mesh
+def rotate_camera_around_mesh(camera, mesh_object, frame_count, radius):
+    for frame in range(1, frame_count + 1):
+        angle = 2 * math.pi * (frame / frame_count)
+        camera.location.x = mesh_object.location.x + radius * math.cos(angle)
+        camera.location.y = mesh_object.location.y + radius * math.sin(angle)
+        camera.location.z = mesh_object.location.z
+        camera.keyframe_insert(data_path="location", frame=frame)
+        bpy.context.view_layer.update()
 
-#render the turntable animation
-def render_turntable(mesh_name, output_path, frame_count=250):
+# Function to render the turntable animation
+def render_turntable(mesh_name, output_path, frame_count, radius):
     bpy.context.scene.frame_start = 1
     bpy.context.scene.frame_end = frame_count
+    rotate_camera_around_mesh(camera, mesh_object, frame_count, radius)
     bpy.context.scene.render.filepath = os.path.join(output_path, f"{mesh_name}_turntable.mp4")
     bpy.context.scene.render.image_settings.file_format = 'FFMPEG'
     bpy.context.scene.render.ffmpeg.format = 'MPEG4'
