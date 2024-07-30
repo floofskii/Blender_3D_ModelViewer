@@ -83,6 +83,9 @@ def render_turntable(mesh_name, output_path, frame_count, radius):
     bpy.context.scene.render.filepath = os.path.join(output_path, f"{mesh_name}_turntable.mp4")
     bpy.context.scene.render.image_settings.file_format = 'FFMPEG'
     bpy.context.scene.render.ffmpeg.format = 'MPEG4'
+    bpy.context.scene.render.ffmpeg.codec = 'AV1'  # AV1
+    bpy.context.scene.render.ffmpeg.constant_rate_factor = 'MEDIUM' # LOSSLESS, HIGH, PERC_LOSELESS, MEDIUM, LOW, LOWEST
+    bpy.context.scene.render.ffmpeg.ffmpeg_preset = 'BEST'  #BEST, GOOD, REALTIME
     bpy.ops.render.render(animation=True)
     print(f"Rendered 360-degree turntable for {mesh_name}")
 
@@ -109,6 +112,11 @@ animation_duration = 10  # Duration in seconds
 total_frames = frame_rate * animation_duration  # Total number of frames
 
 bpy.context.scene.render.fps = frame_rate  # Set the frame rate
+
+# SET THE RESOLUTION
+bpy.context.scene.render.resolution_x = 1280  # 2K:1920, 1080; 4K: 3840, 2160; 1K: 1280, 720
+bpy.context.scene.render.resolution_y = 720
+
 
 # Set background color to black using Workbench
 bpy.context.scene.render.engine = 'BLENDER_WORKBENCH'
