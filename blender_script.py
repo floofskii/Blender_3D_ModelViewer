@@ -45,12 +45,13 @@ def correct_mesh_orientation(mesh_object):
         mesh_object.rotation_euler.rotate_axis('X', 3.14159)  # Rotate 180 degrees
 
 #adjust the camera distance based on the bounding box size
-def adjust_camera_distance(camera, mesh_object, base_distance=10):
+def adjust_camera_distance(mesh_object, base_distance=10, padding_factor=1.5):
     bbox = [mesh_object.matrix_world @ Vector(corner) for corner in mesh_object.bound_box]
     bbox_size = Vector([max(coord) - min(coord) for coord in zip(*bbox)])
     max_dim = max(bbox_size)
-    distance = base_distance + max_dim
+    distance = base_distance + max_dim * padding_factor  # Add padding based on the bounding box size
     return distance
+
 
 # Function to center the mesh in the camera view
 def center_mesh_in_camera_view(camera, mesh_object):
@@ -64,6 +65,13 @@ def center_mesh_in_camera_view(camera, mesh_object):
     camera_constraint.up_axis = 'UP_Y'
     bpy.context.scene.camera = camera
     bpy.context.view_layer.update()
+
+# Function to setup camera for rendering
+def setup_camera_for_rendering(camera, mesh_object):
+    adjusted_distance = adjust_camera_distance(mesh_object)
+    center_mesh_in_camera_view(camera, mesh_object)
+    camera.location.z = mesh_object.location.z + adjusted_distance  # Adjusting camera height
+    return adjusted_distance
 
 # Function to rotate the camera around the mesh
 def rotate_camera_around_mesh(camera, mesh_object, frame_count, radius):
@@ -180,12 +188,8 @@ for mesh_file in mesh_files:
     # Correct the orientation
     correct_mesh_orientation(mesh_object)
 
-    # Center the mesh in the camera view
-    center_mesh_in_camera_view(camera, mesh_object)
-
-    # Adjust camera distance based on mesh size
-    base_distance = 10
-    adjusted_distance = adjust_camera_distance(camera, mesh_object, base_distance)
+    # Setup the camera for consistent rendering
+    adjusted_distance = setup_camera_for_rendering(camera, mesh_object)
 
     # Define number of camera positions for images
     num_positions = 11  # setting it to 11 for test
