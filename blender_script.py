@@ -7,7 +7,7 @@ import math
 folder_path = "C:/Users/winni/Downloads/dragon"
 
 # Define the output path
-output_path = "C:/Users/winni/Downloads/dragon/testing5"  #current path output
+output_path = "C:/Users/winni/Downloads/dragon/testing5" #current path output
 
 # Ensure the output directory exists
 if not os.path.exists(output_path):
@@ -92,9 +92,9 @@ def render_turntable(mesh_name, output_path, frame_count, radius):
     bpy.context.scene.render.filepath = os.path.join(output_path, f"{mesh_name}_turntable.mp4")
     bpy.context.scene.render.image_settings.file_format = 'FFMPEG'
     bpy.context.scene.render.ffmpeg.format = 'MPEG4'
-    bpy.context.scene.render.ffmpeg.codec = 'H264'
-    bpy.context.scene.render.ffmpeg.constant_rate_factor = 'MEDIUM'
-    bpy.context.scene.render.ffmpeg.ffmpeg_preset = 'GOOD'
+    #bpy.context.scene.render.ffmpeg.codec = 'H264'
+    #bpy.context.scene.render.ffmpeg.constant_rate_factor = 'MEDIUM'
+    #bpy.context.scene.render.ffmpeg.ffmpeg_preset = 'GOOD'
     bpy.ops.render.render(animation=True)
     print(f"Rendered 360-degree turntable for {mesh_name}")
 
@@ -115,14 +115,14 @@ def render_flexible_frames(mesh_name, output_path, num_positions, distance):
         render_frame(mesh_name, position_name, position, output_path)
 
 # Set the frame rate and calculate total frames for the animation
-frame_rate = 30  # Desired frame rate
+frame_rate = 12  # Desired frame rate
 animation_duration = 10  # Duration in seconds
 total_frames = frame_rate * animation_duration  # Total number of frames
 bpy.context.scene.render.fps = frame_rate  # Set the frame rate
 
 # Set the resolution
-bpy.context.scene.render.resolution_x = 3840  # 2K:1920, 1080; 4K: 3840, 2160; 1K: 1280, 720
-bpy.context.scene.render.resolution_y = 2160
+bpy.context.scene.render.resolution_x = 1280  # 2K:1920, 1080; 4K: 3840, 2160; 1K: 1280, 720
+bpy.context.scene.render.resolution_y = 720
 
 # Set background color to black using Workbench
 bpy.context.scene.render.engine = 'BLENDER_WORKBENCH'
@@ -151,7 +151,6 @@ camera.data.lens = 70  # Increase this value to zoom in
 
 # Process each .obj, .stl, or .glb file
 for mesh_file in mesh_files:
-    # Full path to the mesh file
     mesh_file_path = os.path.join(folder_path, mesh_file)
 
     # Import the mesh file
@@ -163,7 +162,6 @@ for mesh_file in mesh_files:
         bpy.ops.import_scene.gltf(filepath=mesh_file_path)
     print(f"Imported {mesh_file} successfully.")
 
-    # Get the name of the imported mesh object
     imported_objects = [obj for obj in bpy.context.selected_objects if obj.type == 'MESH']
     if imported_objects:
         mesh_object = imported_objects[0]
@@ -171,36 +169,26 @@ for mesh_file in mesh_files:
     else:
         raise RuntimeError("No mesh object was imported.")
 
-    # Add a basic material to the mesh if it doesn't have one
     if not mesh_object.data.materials:
         mat = bpy.data.materials.new(name="BasicMaterial")
-        mat.diffuse_color = (0.8, 0.8, 0.8, 1)  # Light gray color
+        mat.diffuse_color = (0.8, 0.8, 0.8, 1)
         mesh_object.data.materials.append(mat)
 
-    # Apply smooth shading to the mesh
     bpy.context.view_layer.objects.active = mesh_object
     bpy.ops.object.shade_smooth()
 
-    # Fit the mesh into a bounding box
     target_size = Vector((5, 5, 5))
     fit_mesh_to_bounding_box(mesh_object, target_size)
 
-    # Correct the orientation of the mesh
     correct_mesh_orientation(mesh_object)
 
-    # Setup the camera for consistent rendering
     adjusted_distance = setup_camera_for_rendering(camera, mesh_object)
 
-    # Define number of camera positions for images
-    num_positions = 11  # Change this value to increase or decrease the number of images
-
-    # Render flexible frames around the object
+    num_positions = 11
     render_flexible_frames(mesh_object_name, output_path, num_positions, adjusted_distance)
 
-    # Render the turntable animation
     render_turntable(mesh_object_name, output_path, total_frames, adjusted_distance)
 
-    # Delete the imported mesh object
     bpy.data.objects.remove(mesh_object)
     print(f"Deleted {mesh_object_name}.")
 
