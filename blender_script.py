@@ -3,11 +3,11 @@ import bpy
 from mathutils import Vector
 import math
 
-# Folder path to the .obj and .stl files
-folder_path = "C:/Users/fm647/Downloads/meshes/meshes"
+# Folder path to the .obj, .stl, and .glb files
+folder_path = "C:/Users/winni/Downloads/dragon"
 
 # Define the output path
-output_path = "C:/Users/fm647/Downloads/meshes/meshes/metest"  
+output_path = "C:/Users/winni/Downloads/dragon/testing5"  #current path output
 
 # Ensure the output directory exists
 if not os.path.exists(output_path):
@@ -24,7 +24,7 @@ def render_frame(mesh_name, position_name, position, output_path):
     bpy.ops.render.render(write_still=True)
     print(f"Rendered {position_name} view of {mesh_name} to {render_filepath}")
 
-# Function to fit the mesh into a defined bounding_box
+# Function to fit the mesh into a defined bounding box
 def fit_mesh_to_bounding_box(mesh_object, target_size):
     bpy.context.view_layer.objects.active = mesh_object
     bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='BOUNDS')
@@ -92,9 +92,9 @@ def render_turntable(mesh_name, output_path, frame_count, radius):
     bpy.context.scene.render.filepath = os.path.join(output_path, f"{mesh_name}_turntable.mp4")
     bpy.context.scene.render.image_settings.file_format = 'FFMPEG'
     bpy.context.scene.render.ffmpeg.format = 'MPEG4'
-    bpy.context.scene.render.ffmpeg.codec = 'H264'  # AV1
-    bpy.context.scene.render.ffmpeg.constant_rate_factor = 'MEDIUM' # LOSSLESS, HIGH, PERC_LOSELESS, MEDIUM, LOW, LOWEST
-    bpy.context.scene.render.ffmpeg.ffmpeg_preset = 'GOOD'  #BEST, GOOD, REALTIME
+    bpy.context.scene.render.ffmpeg.codec = 'H264'
+    bpy.context.scene.render.ffmpeg.constant_rate_factor = 'MEDIUM'
+    bpy.context.scene.render.ffmpeg.ffmpeg_preset = 'GOOD'
     bpy.ops.render.render(animation=True)
     print(f"Rendered 360-degree turntable for {mesh_name}")
 
@@ -130,8 +130,8 @@ bpy.context.scene.display.shading.light = 'STUDIO'
 bpy.context.scene.display.shading.background_type = 'WORLD'
 bpy.context.scene.world.color = (0, 0, 0)  # Set the background color to black
 
-# List all .obj and .stl files in the folder
-mesh_files = [f for f in os.listdir(folder_path) if f.endswith((".obj", ".stl"))]
+# List all .obj, .stl, and .glb files in the folder
+mesh_files = [f for f in os.listdir(folder_path) if f.endswith((".obj", ".stl", ".glb"))]
 
 # Create a light source
 bpy.ops.object.light_add(type='SUN', radius=1, location=(10, 10, 10))
@@ -149,16 +149,18 @@ bpy.context.scene.camera = camera
 # Zoom in the camera by adjusting the focal length
 camera.data.lens = 70  # Increase this value to zoom in
 
-# Process each .obj or .stl file
+# Process each .obj, .stl, or .glb file
 for mesh_file in mesh_files:
     # Full path to the mesh file
     mesh_file_path = os.path.join(folder_path, mesh_file)
 
     # Import the mesh file
     if mesh_file.endswith(".obj"):
-        bpy.ops.wm.obj_import(filepath=mesh_file_path)
+        bpy.ops.import_scene.obj(filepath=mesh_file_path)
     elif mesh_file.endswith(".stl"):
         bpy.ops.import_mesh.stl(filepath=mesh_file_path)
+    elif mesh_file.endswith(".glb"):
+        bpy.ops.import_scene.gltf(filepath=mesh_file_path)
     print(f"Imported {mesh_file} successfully.")
 
     # Get the name of the imported mesh object
