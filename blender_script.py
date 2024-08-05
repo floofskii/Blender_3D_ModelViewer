@@ -25,15 +25,23 @@ def render_frame(mesh_name, position_name, position, output_path):
     print(f"Rendered {position_name} view of {mesh_name} to {render_filepath}")
 
 # Function to fit the mesh into a defined bounding box
-def fit_mesh_to_bounding_box(mesh_object, target_size):
-    bpy.context.view_layer.objects.active = mesh_object
+def fit_all_meshes_to_bounding_box(mesh_objects, target_size):
+    # Combine all mesh objects into one
+    bpy.ops.object.select_all(action='DESELECT')
+    for mesh_object in mesh_objects:
+        mesh_object.select_set(True)
+    bpy.context.view_layer.objects.active = mesh_objects[0]
+    bpy.ops.object.join()
+    combined_object = bpy.context.view_layer.objects.active
+
     bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='BOUNDS')
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-    bbox = [mesh_object.matrix_world @ Vector(corner) for corner in mesh_object.bound_box]
+    bbox = [combined_object.matrix_world @ Vector(corner) for corner in combined_object.bound_box]
     bbox_size = Vector([max(coord) - min(coord) for coord in zip(*bbox)])
     scale_factor = min(target_size[i] / bbox_size[i] for i in range(3)) * 0.85  # Add padding by scaling down to 85%
-    mesh_object.scale = [scale_factor] * 3
+    combined_object.scale = [scale_factor] * 3
     bpy.ops.object.transform_apply(scale=True)
+    return combined_object
 
 # Function to correct the orientation of the mesh if it is upside down
 def correct_mesh_orientation(mesh_object):
@@ -88,7 +96,7 @@ def rotate_camera_around_mesh(camera, mesh_object, frame_count, radius):
 def render_turntable(mesh_name, output_path, frame_count, radius):
     bpy.context.scene.frame_start = 1
     bpy.context.scene.frame_end = frame_count
-    rotate_camera_around_mesh(camera, mesh_object, frame_count, radius)
+    rotate_camera_around_mesh(camera, combined_object, frame_count, radius)
     bpy.context.scene.render.filepath = os.path.join(output_path, f"{mesh_name}_turntable.mp4")
     bpy.context.scene.render.image_settings.file_format = 'FFMPEG'
     bpy.context.scene.render.ffmpeg.format = 'MPEG4'
@@ -150,6 +158,7 @@ bpy.context.scene.camera = camera
 camera.data.lens = 70  # Increase this value to zoom in
 
 # Process each .obj, .stl, or .glb file
+mesh_objects = []
 for mesh_file in mesh_files:
     mesh_file_path = os.path.join(folder_path, mesh_file)
 
@@ -163,33 +172,20 @@ for mesh_file in mesh_files:
     print(f"Imported {mesh_file} successfully.")
 
     imported_objects = [obj for obj in bpy.context.selected_objects if obj.type == 'MESH']
-    if imported_objects:
-        mesh_object = imported_objects[0]
-        mesh_object_name = mesh_object.name
-    else:
-        raise RuntimeError("No mesh object was imported.")
+    mesh_objects.extend(imported_objects)
 
-    if not mesh_object.data.materials:
-        mat = bpy.data.materials.new(name="BasicMaterial")
-        mat.diffuse_color = (0.8, 0.8, 0.8, 1)
-        mesh_object.data.materials.append(mat)
+if mesh_objects:
+    combined_object = fit_all_meshes_to_bounding_box(mesh_objects, Vector((5, 5, 5)))
+    correct_mesh_orientation(combined_object)
 
-    bpy.context.view_layer.objects.active = mesh_object
-    bpy.ops.object.shade_smooth()
-
-    target_size = Vector((5, 5, 5))
-    fit_mesh_to_bounding_box(mesh_object, target_size)
-
-    correct_mesh_orientation(mesh_object)
-
-    adjusted_distance = setup_camera_for_rendering(camera, mesh_object)
+    adjusted_distance = setup_camera_for_rendering(camera, combined_object)
 
     num_positions = 11
-    render_flexible_frames(mesh_object_name, output_path, num_positions, adjusted_distance)
+    render_flexible_frames(combined_object.name, output_path, num_positions, adjusted_distance)
 
-    render_turntable(mesh_object_name, output_path, total_frames, adjusted_distance)
+    render_turntable(combined_object.name, output_path, total_frames, adjusted_distance)
 
-    bpy.data.objects.remove(mesh_object)
-    print(f"Deleted {mesh_object_name}.")
+    bpy.data.objects.remove(combined_object)
+    print(f"Deleted {combined_object.name}.")
 
 print("Rendering completed.")
