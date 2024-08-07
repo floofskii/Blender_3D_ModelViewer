@@ -3,11 +3,11 @@ import bpy
 from mathutils import Vector
 import math
 
-# Folder path to the .obj, .stl, and .glb files
-folder_path = "C:/Users/winni/Downloads/dragon"
+# Main folder path containing subfolders with .obj, .stl, and .glb files
+main_folder_path = "C:/Users/winni/Downloads/meshfolder"
 
 # Define the output path
-output_path = "C:/Users/winni/Downloads/dragon/testing5" #current path output
+output_path = "C:/Users/winni/Downloads/meshfolder/testing5"
 
 # Ensure the output directory exists
 if not os.path.exists(output_path):
@@ -26,7 +26,6 @@ def render_frame(mesh_name, position_name, position, output_path):
 
 # Function to fit the mesh into a defined bounding box
 def fit_all_meshes_to_bounding_box(mesh_objects, target_size):
-    # Combine all mesh objects into one
     bpy.ops.object.select_all(action='DESELECT')
     for mesh_object in mesh_objects:
         mesh_object.select_set(True)
@@ -38,7 +37,7 @@ def fit_all_meshes_to_bounding_box(mesh_objects, target_size):
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     bbox = [combined_object.matrix_world @ Vector(corner) for corner in combined_object.bound_box]
     bbox_size = Vector([max(coord) - min(coord) for coord in zip(*bbox)])
-    scale_factor = min(target_size[i] / bbox_size[i] for i in range(3)) * 0.85  # Add padding by scaling down to 85%
+    scale_factor = min(target_size[i] / bbox_size[i] for i in range(3)) * 0.85
     combined_object.scale = [scale_factor] * 3
     bpy.ops.object.transform_apply(scale=True)
     return combined_object
@@ -52,14 +51,14 @@ def correct_mesh_orientation(mesh_object):
     if up_vector.dot(z_up_vector) < 0:
         bpy.context.view_layer.objects.active = mesh_object
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-        mesh_object.rotation_euler.rotate_axis('X', 3.14159)  # Rotate 180 degrees
+        mesh_object.rotation_euler.rotate_axis('X', 3.14159)
 
 # Function to dynamically adjust the camera distance based on the bounding box size
 def adjust_camera_distance(mesh_object, base_distance=10, padding_factor=1.5):
     bbox = [mesh_object.matrix_world @ Vector(corner) for corner in mesh_object.bound_box]
     bbox_size = Vector([max(coord) - min(coord) for coord in zip(*bbox)])
     max_dim = max(bbox_size)
-    distance = base_distance + max_dim * padding_factor  # Add padding based on the bounding box size
+    distance = base_distance + max_dim * padding_factor
     return distance
 
 # Function to center the mesh in the camera view
@@ -79,7 +78,7 @@ def center_mesh_in_camera_view(camera, mesh_object):
 def setup_camera_for_rendering(camera, mesh_object):
     adjusted_distance = adjust_camera_distance(mesh_object)
     center_mesh_in_camera_view(camera, mesh_object)
-    camera.location.z = mesh_object.location.z + adjusted_distance  # Adjusting camera height
+    camera.location.z = mesh_object.location.z + adjusted_distance
     return adjusted_distance
 
 # Function to rotate the camera around the mesh
@@ -100,9 +99,9 @@ def render_turntable(mesh_name, output_path, frame_count, radius):
     bpy.context.scene.render.filepath = os.path.join(output_path, f"{mesh_name}_turntable.mp4")
     bpy.context.scene.render.image_settings.file_format = 'FFMPEG'
     bpy.context.scene.render.ffmpeg.format = 'MPEG4'
-    #bpy.context.scene.render.ffmpeg.codec = 'H264'
-    #bpy.context.scene.render.ffmpeg.constant_rate_factor = 'MEDIUM'
-    #bpy.context.scene.render.ffmpeg.ffmpeg_preset = 'GOOD'
+    #bpy.context.scene.render.ffmpeg.codec = H264'  # AV1
+    #bpy.context.scene.render.ffmpeg.constant_rate_factor = 'MEDIUM' # LOSSLESS, HIGH, PERC_LOSELESS, MEDIUM, LOW, LOWEST
+    #bpy.context.scene.render.ffmpeg.ffmpeg_preset = 'BEST'  #BEST, GOOD, REALTIME
     bpy.ops.render.render(animation=True)
     print(f"Rendered 360-degree turntable for {mesh_name}")
 
@@ -123,23 +122,20 @@ def render_flexible_frames(mesh_name, output_path, num_positions, distance):
         render_frame(mesh_name, position_name, position, output_path)
 
 # Set the frame rate and calculate total frames for the animation
-frame_rate = 12  # Desired frame rate
-animation_duration = 10  # Duration in seconds
-total_frames = frame_rate * animation_duration  # Total number of frames
-bpy.context.scene.render.fps = frame_rate  # Set the frame rate
+frame_rate = 12
+animation_duration = 10
+total_frames = frame_rate * animation_duration
+bpy.context.scene.render.fps = frame_rate
 
 # Set the resolution
-bpy.context.scene.render.resolution_x = 1280  # 2K:1920, 1080; 4K: 3840, 2160; 1K: 1280, 720
+bpy.context.scene.render.resolution_x = 1280
 bpy.context.scene.render.resolution_y = 720
 
 # Set background color to black using Workbench
 bpy.context.scene.render.engine = 'BLENDER_WORKBENCH'
 bpy.context.scene.display.shading.light = 'STUDIO'
 bpy.context.scene.display.shading.background_type = 'WORLD'
-bpy.context.scene.world.color = (0, 0, 0)  # Set the background color to black
-
-# List all .obj, .stl, and .glb files in the folder
-mesh_files = [f for f in os.listdir(folder_path) if f.endswith((".obj", ".stl", ".glb"))]
+bpy.context.scene.world.color = (0, 0, 0)
 
 # Create a light source
 bpy.ops.object.light_add(type='SUN', radius=1, location=(10, 10, 10))
@@ -155,37 +151,51 @@ camera.name = 'Camera.001'
 bpy.context.scene.camera = camera
 
 # Zoom in the camera by adjusting the focal length
-camera.data.lens = 70  # Increase this value to zoom in
+camera.data.lens = 70
 
-# Process each .obj, .stl, or .glb file
-mesh_objects = []
-for mesh_file in mesh_files:
-    mesh_file_path = os.path.join(folder_path, mesh_file)
-
-    # Import the mesh file
-    if mesh_file.endswith(".obj"):
-        bpy.ops.wm.obj_import(filepath=mesh_file_path)
-    elif mesh_file.endswith(".stl"):
-        bpy.ops.import_mesh.stl(filepath=mesh_file_path)
-    elif mesh_file.endswith(".glb"):
-        bpy.ops.import_scene.gltf(filepath=mesh_file_path)
-    print(f"Imported {mesh_file} successfully.")
-
-    imported_objects = [obj for obj in bpy.context.selected_objects if obj.type == 'MESH']
-    mesh_objects.extend(imported_objects)
-
-if mesh_objects:
-    combined_object = fit_all_meshes_to_bounding_box(mesh_objects, Vector((5, 5, 5)))
-    correct_mesh_orientation(combined_object)
-
-    adjusted_distance = setup_camera_for_rendering(camera, combined_object)
-
-    num_positions = 11
-    render_flexible_frames(combined_object.name, output_path, num_positions, adjusted_distance)
-
-    render_turntable(combined_object.name, output_path, total_frames, adjusted_distance)
-
-    bpy.data.objects.remove(combined_object)
-    print(f"Deleted {combined_object.name}.")
+# Iterate through each subfolder in the main folder
+for subfolder_name in os.listdir(main_folder_path):
+    subfolder_path = os.path.join(main_folder_path, subfolder_name)
+    
+    if os.path.isdir(subfolder_path):
+        print(f"Processing folder: {subfolder_path}")
+        
+        # List all .obj, .stl, and .glb files in the subfolder
+        mesh_files = [f for f in os.listdir(subfolder_path) if f.endswith((".obj", ".stl", ".glb"))]
+        
+        mesh_objects = []
+        for mesh_file in mesh_files:
+            mesh_file_path = os.path.join(subfolder_path, mesh_file)
+            
+            # Import the mesh file
+            if mesh_file.endswith(".obj"):
+                bpy.ops.wm.obj_import(filepath=mesh_file_path)
+            elif mesh_file.endswith(".stl"):
+                bpy.ops.import_mesh.stl(filepath=mesh_file_path)
+            elif mesh_file.endswith(".glb"):
+                bpy.ops.import_scene.gltf(filepath=mesh_file_path)
+            print(f"Imported {mesh_file} successfully.")
+            
+            imported_objects = [obj for obj in bpy.context.selected_objects if obj.type == 'MESH']
+            mesh_objects.extend(imported_objects)
+        
+        if mesh_objects:
+            combined_object = fit_all_meshes_to_bounding_box(mesh_objects, Vector((5, 5, 5)))
+            correct_mesh_orientation(combined_object)
+            
+            adjusted_distance = setup_camera_for_rendering(camera, combined_object)
+            
+            num_positions = 11
+            render_flexible_frames(combined_object.name, output_path, num_positions, adjusted_distance)
+            
+            render_turntable(combined_object.name, output_path, total_frames, adjusted_distance)
+            
+            bpy.data.objects.remove(combined_object)
+            print(f"Deleted {combined_object.name}.")
+        
+        # Clean up and remove imported objects to avoid overlap in the next iteration
+        bpy.ops.object.select_all(action='DESELECT')
+        bpy.ops.object.select_by_type(type='MESH')
+        bpy.ops.object.delete()
 
 print("Rendering completed.")
