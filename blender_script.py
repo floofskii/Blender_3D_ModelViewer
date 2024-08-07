@@ -164,7 +164,7 @@ for mesh_file in mesh_files:
 
     # Import the mesh file
     if mesh_file.endswith(".obj"):
-        bpy.ops.import_scene.obj(filepath=mesh_file_path)
+        bpy.ops.wm.obj_import(filepath=mesh_file_path)
     elif mesh_file.endswith(".stl"):
         bpy.ops.import_mesh.stl(filepath=mesh_file_path)
     elif mesh_file.endswith(".glb"):
