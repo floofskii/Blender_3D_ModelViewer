@@ -84,28 +84,42 @@ def setup_camera_for_rendering(camera, mesh_object):
     return adjusted_distance
 
 # Function to rotate the camera around the mesh
-def rotate_camera_around_mesh(camera, mesh_object, frame_count, radius):
+def rotate_camera_around_mesh(camera, mesh_object, frame_count, radius, eye_offset=0):
     for frame in range(1, frame_count + 1):
         angle = 2 * math.pi * (frame / frame_count)
-        camera.location.x = mesh_object.location.x + radius * math.cos(angle)
+        camera.location.x = mesh_object.location.x + radius * math.cos(angle) + eye_offset
         camera.location.y = mesh_object.location.y + radius * math.sin(angle)
         camera.location.z = mesh_object.location.z
         camera.keyframe_insert(data_path="location", frame=frame)
         bpy.context.view_layer.update()
+        # Debugging: Print camera position
+        print(f"Frame {frame}: Camera location - {camera.location}")
 
-# Function to render the turntable animation
-def render_turntable(mesh_name, output_path, frame_count, radius):
+# Function to render the stereoscopic turntable animation
+def render_stereoscopic_turntable(mesh_name, output_path, frame_count, radius, eye_distance):
     bpy.context.scene.frame_start = 1
     bpy.context.scene.frame_end = frame_count
-    rotate_camera_around_mesh(camera, combined_object, frame_count, radius)
-    bpy.context.scene.render.filepath = os.path.join(output_path, f"{mesh_name}_turntable.mp4")
+    
+    # Set common render settings
     bpy.context.scene.render.image_settings.file_format = 'FFMPEG'
     bpy.context.scene.render.ffmpeg.format = 'MPEG4'
-    #bpy.context.scene.render.ffmpeg.codec = H264'  # AV1
-    #bpy.context.scene.render.ffmpeg.constant_rate_factor = 'MEDIUM' # LOSSLESS, HIGH, PERC_LOSELESS, MEDIUM, LOW, LOWEST
-    #bpy.context.scene.render.ffmpeg.ffmpeg_preset = 'BEST'  #BEST, GOOD, REALTIME
+    bpy.context.scene.render.ffmpeg.codec = 'H264'  # or AV1
+    bpy.context.scene.render.ffmpeg.constant_rate_factor = 'MEDIUM'  # LOSSLESS, HIGH, PERC_LOSELESS, MEDIUM, LOW, LOWEST
+    bpy.context.scene.render.ffmpeg.ffmpeg_preset = 'BEST'  # BEST, GOOD, REALTIME
+
+    # Render for the left eye
+    print("Rendering for left eye")
+    rotate_camera_around_mesh(camera, combined_object, frame_count, radius, -eye_distance / 2)
+    bpy.context.scene.render.filepath = os.path.join(output_path, f"{mesh_name}_turntable_left.mp4")
     bpy.ops.render.render(animation=True)
-    print(f"Rendered 360-degree turntable for {mesh_name}")
+    print(f"Rendered 360-degree turntable for left eye of {mesh_name}")
+
+    # Render for the right eye
+    print("Rendering for right eye")
+    rotate_camera_around_mesh(camera, combined_object, frame_count, radius, eye_distance / 2)
+    bpy.context.scene.render.filepath = os.path.join(output_path, f"{mesh_name}_turntable_right.mp4")
+    bpy.ops.render.render(animation=True)
+    print(f"Rendered 360-degree turntable for right eye of {mesh_name}")
 
 # Function to generate flexible camera positions
 def generate_camera_positions(n, distance):
@@ -149,6 +163,9 @@ bpy.context.scene.camera = camera
 # Zoom in the camera by adjusting the focal length
 camera.data.lens = 70
 
+# Eye distance for stereoscopic effect
+eye_distance = 0.1
+    
 # Iterate through each subfolder in the main folder
 for subfolder_name in os.listdir(main_folder_path):
     subfolder_path = os.path.join(main_folder_path, subfolder_name)
@@ -179,12 +196,22 @@ for subfolder_name in os.listdir(main_folder_path):
             combined_object = fit_all_meshes_to_bounding_box(mesh_objects, Vector((5, 5, 5)))
             correct_mesh_orientation(combined_object)
             
+            # Add a basic material to the mesh if it doesn't have one
+            if not combined_object.data.materials:
+                mat = bpy.data.materials.new(name="BasicMaterial")
+                mat.diffuse_color = (0.8, 0.8, 0.8, 1)  # Light gray color
+                combined_object.data.materials.append(mat)
+                
+            # Apply smooth shading to the mesh
+            bpy.context.view_layer.objects.active = combined_object
+            bpy.ops.object.shade_smooth()
+            
             adjusted_distance = setup_camera_for_rendering(camera, combined_object)
             
             num_positions = 11
             render_flexible_frames(combined_object.name, output_path, num_positions, adjusted_distance)
             
-            render_turntable(combined_object.name, output_path, total_frames, adjusted_distance)
+            render_stereoscopic_turntable(combined_object.name, output_path, total_frames, adjusted_distance, eye_distance)
             
             bpy.data.objects.remove(combined_object)
             print(f"Deleted {combined_object.name}.")
