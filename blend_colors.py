@@ -103,23 +103,71 @@ def render_stereoscopic_turntable(mesh_name, output_path, frame_count, radius, e
     # Set common render settings
     bpy.context.scene.render.image_settings.file_format = 'FFMPEG'
     bpy.context.scene.render.ffmpeg.format = 'MPEG4'
-    bpy.context.scene.render.ffmpeg.codec = 'H264'  # or AV1
-    bpy.context.scene.render.ffmpeg.constant_rate_factor = 'MEDIUM'  # LOSSLESS, HIGH, PERC_LOSELESS, MEDIUM, LOW, LOWEST
-    bpy.context.scene.render.ffmpeg.ffmpeg_preset = 'BEST'  # BEST, GOOD, REALTIME
+    bpy.context.scene.render.ffmpeg.codec = 'H264'
+    bpy.context.scene.render.ffmpeg.constant_rate_factor = 'MEDIUM'
+    bpy.context.scene.render.ffmpeg.ffmpeg_preset = 'BEST'
 
     # Render for the left eye
     print("Rendering for left eye")
     rotate_camera_around_mesh(camera, combined_object, frame_count, radius, -eye_distance / 2)
-    bpy.context.scene.render.filepath = os.path.join(output_path, f"{mesh_name}_turntable_left.mp4")
+    left_eye_video = os.path.join(output_path, f"{mesh_name}_turntable_left.mp4")
+    bpy.context.scene.render.filepath = left_eye_video
     bpy.ops.render.render(animation=True)
     print(f"Rendered 360-degree turntable for left eye of {mesh_name}")
 
     # Render for the right eye
     print("Rendering for right eye")
     rotate_camera_around_mesh(camera, combined_object, frame_count, radius, eye_distance / 2)
-    bpy.context.scene.render.filepath = os.path.join(output_path, f"{mesh_name}_turntable_right.mp4")
+    right_eye_video = os.path.join(output_path, f"{mesh_name}_turntable_right.mp4")
+    bpy.context.scene.render.filepath = right_eye_video
     bpy.ops.render.render(animation=True)
     print(f"Rendered 360-degree turntable for right eye of {mesh_name}")
+
+    # Combine left and right videos side-by-side using Compositor Nodes
+    bpy.context.scene.use_nodes = True
+    nodes = bpy.context.scene.node_tree.nodes
+    links = bpy.context.scene.node_tree.links
+    
+    # Clear existing nodes
+    for node in nodes:
+        nodes.remove(node)
+    
+    # Add input nodes
+    left_movie = nodes.new(type="CompositorNodeMovieClip")
+    right_movie = nodes.new(type="CompositorNodeMovieClip")
+    
+    # Load the rendered videos
+    left_movie.clip = bpy.data.movieclips.load(left_eye_video)
+    right_movie.clip = bpy.data.movieclips.load(right_eye_video)
+    
+    # Add translate nodes to position the videos
+    translate_left = nodes.new(type="CompositorNodeTranslate")
+    translate_right = nodes.new(type="CompositorNodeTranslate")
+    
+    # Adjust translation to ensure proper side-by-side alignment
+    translate_left.inputs["X"].default_value = -bpy.context.scene.render.resolution_x // 2
+    translate_right.inputs["X"].default_value = bpy.context.scene.render.resolution_x // 2
+    
+    # Add an alpha over node to combine the two inputs
+    alpha_over = nodes.new(type="CompositorNodeAlphaOver")
+    
+    # Add an output node
+    composite = nodes.new(type="CompositorNodeComposite")
+    
+    # Link nodes
+    links.new(left_movie.outputs["Image"], translate_left.inputs[0])
+    links.new(right_movie.outputs["Image"], translate_right.inputs[0])
+    links.new(translate_left.outputs["Image"], alpha_over.inputs[1])
+    links.new(translate_right.outputs["Image"], alpha_over.inputs[2])
+    links.new(alpha_over.outputs["Image"], composite.inputs["Image"])
+    
+    # Set output path for side-by-side video
+    bpy.context.scene.render.filepath = os.path.join(output_path, f"{mesh_name}_turntable_side_by_side.mp4")
+    bpy.context.scene.render.resolution_x *= 2  # Double width for side-by-side video
+    
+    # Render the combined video
+    bpy.ops.render.render(animation=True)
+    print(f"Rendered side-by-side stereoscopic turntable for {mesh_name}")
 
 # Function to generate flexible camera positions
 def generate_camera_positions(n, distance):
@@ -138,7 +186,7 @@ def render_flexible_frames(mesh_name, output_path, num_positions, distance):
         render_frame(mesh_name, position_name, position, output_path)
 
 # Set the frame rate and calculate total frames for the animation
-frame_rate = 12
+frame_rate = 6
 animation_duration = 10
 total_frames = frame_rate * animation_duration
 bpy.context.scene.render.fps = frame_rate
@@ -208,12 +256,15 @@ for subfolder_name in os.listdir(main_folder_path):
             
             adjusted_distance = setup_camera_for_rendering(camera, combined_object)
             
-            num_positions = 11
+            num_positions = 3
             render_flexible_frames(combined_object.name, output_path, num_positions, adjusted_distance)
             
             render_stereoscopic_turntable(combined_object.name, output_path, total_frames, adjusted_distance, eye_distance)
             
-            bpy.data.objects.remove(combined_object)
+            # Ensure the object is removed correctly to avoid errors
+            bpy.ops.object.select_all(action='DESELECT')
+            if combined_object.name in bpy.context.view_layer.objects:
+                bpy.data.objects.remove(bpy.context.view_layer.objects[combined_object.name])
             print(f"Deleted {combined_object.name}.")
         
         # Clean up and remove imported objects to avoid overlap in the next iteration
