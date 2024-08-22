@@ -1,19 +1,69 @@
-#The section that sets the background color to black using Workbench settings has been removed. This will allow Blender to use its default background settings.
-
 import os
 import bpy
 from mathutils import Vector
 import math
 
 # Main folder path containing subfolders with .obj, .stl, and .glb files
-main_folder_path = "C:/Users/winni/Downloads/meshfolder"
+main_folder_path = "C:/Users/winni/Downloads/mainmeshfolder"
 
 # Define the output path
-output_path = "C:/Users/winni/Downloads/meshfolder/testing5"
+output_path = "C:/Users/winni/Downloads/mainmeshfolder/testing77"
 
 # Ensure the output directory exists
 if not os.path.exists(output_path):
     os.makedirs(output_path)
+
+# Path to your HDRI file
+hdri_path = "C:/Users/winni/Downloads/mainmeshfolder/overcast_soil_puresky_4k.exr"
+
+# Function to set up HDRI environment lighting
+def setup_hdri_lighting(hdri_path):
+    world = bpy.context.scene.world
+    world.use_nodes = True
+    nodes = world.node_tree.nodes
+    links = world.node_tree.links
+    
+    # Clear existing nodes
+    nodes.clear()
+    
+    # Add Environment Texture node
+    env_texture_node = nodes.new(type='ShaderNodeTexEnvironment')
+    env_texture_node.image = bpy.data.images.load(hdri_path)  # Load the HDRI file
+    
+    # Add Mapping and Texture Coordinate nodes for better control
+    mapping_node = nodes.new(type='ShaderNodeMapping')
+    tex_coord_node = nodes.new(type='ShaderNodeTexCoord')
+    
+    # Connect Texture Coordinate to Mapping, and then to Environment Texture
+    links.new(tex_coord_node.outputs['Generated'], mapping_node.inputs['Vector'])
+    links.new(mapping_node.outputs['Vector'], env_texture_node.inputs['Vector'])
+    
+    # Add Background node
+    background_node = nodes.new(type='ShaderNodeBackground')
+    background_node.inputs['Strength'].default_value = 1.0  # Initial strength, may adjust later
+    
+    # Link the nodes
+    links.new(env_texture_node.outputs['Color'], background_node.inputs['Color'])
+    
+    # Add Output node
+    output_node = nodes.new(type='ShaderNodeOutputWorld')
+    links.new(background_node.outputs['Background'], output_node.inputs['Surface'])
+
+# Disable transparency in render settings
+bpy.context.scene.render.film_transparent = False
+
+# Set up color management settings
+def setup_color_management():
+    bpy.context.scene.view_settings.view_transform = 'Raw'
+    bpy.context.scene.view_settings.look = 'None'
+    bpy.context.scene.view_settings.exposure = -0.426  # Start with neutral exposure
+    bpy.context.scene.view_settings.gamma = 1.567  # Neutral gamma
+
+# Function to combine all selected objects into one
+def combine_objects():
+    bpy.ops.object.select_all(action='DESELECT')
+    bpy.ops.object.select_by_type(type='MESH')
+    bpy.ops.object.join()
 
 # Function to render a frame from a specific camera position
 def render_frame(mesh_name, position_name, position, output_path):
@@ -27,22 +77,15 @@ def render_frame(mesh_name, position_name, position, output_path):
     print(f"Rendered {position_name} view of {mesh_name} to {render_filepath}")
 
 # Function to fit the mesh into a defined bounding box
-def fit_all_meshes_to_bounding_box(mesh_objects, target_size):
-    bpy.ops.object.select_all(action='DESELECT')
-    for mesh_object in mesh_objects:
-        mesh_object.select_set(True)
-    bpy.context.view_layer.objects.active = mesh_objects[0]
-    bpy.ops.object.join()
-    combined_object = bpy.context.view_layer.objects.active
-
+def fit_mesh_to_bounding_box(mesh_object, target_size):
+    bpy.context.view_layer.objects.active = mesh_object
     bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='BOUNDS')
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-    bbox = [combined_object.matrix_world @ Vector(corner) for corner in combined_object.bound_box]
+    bbox = [mesh_object.matrix_world @ Vector(corner) for corner in mesh_object.bound_box]
     bbox_size = Vector([max(coord) - min(coord) for coord in zip(*bbox)])
-    scale_factor = min(target_size[i] / bbox_size[i] for i in range(3)) * 0.85
-    combined_object.scale = [scale_factor] * 3
+    scale_factor = min(target_size[i] / bbox_size[i] for i in range(3)) * 0.85  # Add padding by scaling down to 85%
+    mesh_object.scale = [scale_factor] * 3
     bpy.ops.object.transform_apply(scale=True)
-    return combined_object
 
 # Function to correct the orientation of the mesh if it is upside down
 def correct_mesh_orientation(mesh_object):
@@ -92,11 +135,10 @@ def rotate_camera_around_mesh(camera, mesh_object, frame_count, radius, eye_offs
         camera.location.z = mesh_object.location.z
         camera.keyframe_insert(data_path="location", frame=frame)
         bpy.context.view_layer.update()
-        # Debugging: Print camera position
         print(f"Frame {frame}: Camera location - {camera.location}")
 
 # Function to render the stereoscopic turntable animation
-def render_stereoscopic_turntable(mesh_name, output_path, frame_count, radius, eye_distance):
+def render_stereoscopic_turntable(subfolder_name, mesh_name, output_path, frame_count, radius, eye_distance):
     bpy.context.scene.frame_start = 1
     bpy.context.scene.frame_end = frame_count
     
@@ -109,20 +151,20 @@ def render_stereoscopic_turntable(mesh_name, output_path, frame_count, radius, e
 
     # Render for the left eye
     print("Rendering for left eye")
-    rotate_camera_around_mesh(camera, combined_object, frame_count, radius, -eye_distance / 2)
-    left_eye_video = os.path.join(output_path, f"{mesh_name}_turntable_left.mp4")
+    rotate_camera_around_mesh(camera, mesh_object, frame_count, radius, -eye_distance / 2)
+    left_eye_video = os.path.join(output_path, f"{subfolder_name}_{mesh_name}_turntable_left.mp4")
     bpy.context.scene.render.filepath = left_eye_video
     bpy.ops.render.render(animation=True)
     print(f"Rendered 360-degree turntable for left eye of {mesh_name}")
 
     # Render for the right eye
     print("Rendering for right eye")
-    rotate_camera_around_mesh(camera, combined_object, frame_count, radius, eye_distance / 2)
-    right_eye_video = os.path.join(output_path, f"{mesh_name}_turntable_right.mp4")
+    rotate_camera_around_mesh(camera, mesh_object, frame_count, radius, eye_distance / 2)
+    right_eye_video = os.path.join(output_path, f"{subfolder_name}_{mesh_name}_turntable_right.mp4")
     bpy.context.scene.render.filepath = right_eye_video
     bpy.ops.render.render(animation=True)
     print(f"Rendered 360-degree turntable for right eye of {mesh_name}")
-
+    
     # Combine left and right videos side-by-side using Compositor Nodes
     bpy.context.scene.use_nodes = True
     nodes = bpy.context.scene.node_tree.nodes
@@ -169,6 +211,7 @@ def render_stereoscopic_turntable(mesh_name, output_path, frame_count, radius, e
     bpy.ops.render.render(animation=True)
     print(f"Rendered side-by-side stereoscopic turntable for {mesh_name}")
 
+
 # Function to generate flexible camera positions
 def generate_camera_positions(n, distance):
     positions = {}
@@ -180,7 +223,7 @@ def generate_camera_positions(n, distance):
     return positions
 
 # Function to render flexible frames around the object
-def render_flexible_frames(mesh_name, output_path, num_positions, distance):
+def render_flexible_frames(subfolder_name, mesh_name, output_path, num_positions, distance):
     camera_positions = generate_camera_positions(num_positions, distance)
     for position_name, position in camera_positions.items():
         render_frame(mesh_name, position_name, position, output_path)
@@ -195,10 +238,22 @@ bpy.context.scene.render.fps = frame_rate
 bpy.context.scene.render.resolution_x = 1280
 bpy.context.scene.render.resolution_y = 720
 
-# Create a light source
-bpy.ops.object.light_add(type='SUN', radius=1, location=(10, 10, 10))
-light = bpy.context.object
-light.data.energy = 5
+# Use Eevee render engine
+bpy.context.scene.render.engine = 'BLENDER_EEVEE'
+
+# Disable Ambient Occlusion, Bloom, and Screen Space Reflections to avoid any indirect shadowing effects
+bpy.context.scene.eevee.use_gtao = False
+bpy.context.scene.eevee.use_bloom = False
+bpy.context.scene.eevee.use_ssr = False
+
+# Set the number of samples for rendering (Eevee specific)
+bpy.context.scene.eevee.taa_render_samples = 64  # Adjust for desired quality
+
+# Set up the HDRI environment lighting
+setup_hdri_lighting(hdri_path)
+
+# Apply the color management settings
+setup_color_management()
 
 # Create a camera
 bpy.ops.object.camera_add(location=(0, 0, 10))
@@ -211,63 +266,107 @@ bpy.context.scene.camera = camera
 # Zoom in the camera by adjusting the focal length
 camera.data.lens = 70
 
-# Eye distance for stereoscopic effect
-eye_distance = 0.1
-    
+# Disable Depth of Field to avoid blurriness
+camera.data.dof.use_dof = False
+
+# Add a soft area light for additional lighting
+bpy.ops.object.light_add(type='AREA', location=(5, 5, 5))
+area_light = bpy.context.object
+area_light.data.energy = 100  # Adjusted energy level
+area_light.data.size = 10  # Larger size for softer shadows
+area_light.data.use_shadow = False  # Disable shadows for this light
+
+# Add a sun lamp for directional light
+bpy.ops.object.light_add(type='SUN', location=(10, 10, 10))
+sun_light = bpy.context.object
+sun_light.data.energy = 1  # Adjusted energy level
+sun_light.data.use_shadow = False  # Disable shadows for this light
+
+# Add point lights around the object for better illumination
+point_light_positions = [
+    (5, 5, 10),
+    (-5, -5, 10),
+    (-5, 5, 10),
+    (5, -5, 10)
+]
+
+for position in point_light_positions:
+    bpy.ops.object.light_add(type='POINT', location=position)
+    point_light = bpy.context.object
+    point_light.data.energy = 50  # Adjusted energy level
+    point_light.data.use_shadow = False  # Disable shadows for this light
+
 # Iterate through each subfolder in the main folder
 for subfolder_name in os.listdir(main_folder_path):
     subfolder_path = os.path.join(main_folder_path, subfolder_name)
     
     if os.path.isdir(subfolder_path):
         print(f"Processing folder: {subfolder_path}")
+
+        # Create an output folder for each subfolder
+        subfolder_output_path = os.path.join(output_path, subfolder_name)
+        if not os.path.exists(subfolder_output_path):
+            os.makedirs(subfolder_output_path)
         
         # List all .obj, .stl, and .glb files in the subfolder
         mesh_files = [f for f in os.listdir(subfolder_path) if f.endswith((".obj", ".stl", ".glb"))]
         
-        mesh_objects = []
         for mesh_file in mesh_files:
+            # Clear the scene before processing the new mesh
+            bpy.ops.object.select_all(action='DESELECT')
+            bpy.ops.object.select_by_type(type='MESH')
+            bpy.ops.object.delete()
+            
             mesh_file_path = os.path.join(subfolder_path, mesh_file)
             
-            # Import the mesh file
+            # Import the mesh file using the updated method
             if mesh_file.endswith(".obj"):
                 bpy.ops.wm.obj_import(filepath=mesh_file_path)
             elif mesh_file.endswith(".stl"):
                 bpy.ops.import_mesh.stl(filepath=mesh_file_path)
-            elif mesh_file.endswith(".glb"):
-                bpy.ops.import_scene.gltf(filepath=mesh_file_path)
             print(f"Imported {mesh_file} successfully.")
             
-            imported_objects = [obj for obj in bpy.context.selected_objects if obj.type == 'MESH']
-            mesh_objects.extend(imported_objects)
-        
-        if mesh_objects:
-            combined_object = fit_all_meshes_to_bounding_box(mesh_objects, Vector((5, 5, 5)))
-            correct_mesh_orientation(combined_object)
+            # Combine all imported objects into one
+            combine_objects()
             
+            # Get the name of the imported mesh object
+            imported_objects = [obj for obj in bpy.context.selected_objects if obj.type == 'MESH']
+            if imported_objects:
+                mesh_object = imported_objects[0]
+                mesh_object_name = mesh_object.name
+            else:
+                raise RuntimeError("No mesh object was imported.")
+    
             # Add a basic material to the mesh if it doesn't have one
-            if not combined_object.data.materials:
+            if not mesh_object.data.materials:
                 mat = bpy.data.materials.new(name="BasicMaterial")
                 mat.diffuse_color = (0.8, 0.8, 0.8, 1)  # Light gray color
-                combined_object.data.materials.append(mat)
-                
+                mesh_object.data.materials.append(mat)
+            
+            # Process each mesh individually
+            fit_mesh_to_bounding_box(mesh_object, Vector((5, 5, 5)))
+            correct_mesh_orientation(mesh_object)
+            
             # Apply smooth shading to the mesh
-            bpy.context.view_layer.objects.active = combined_object
+            bpy.context.view_layer.objects.active = mesh_object
             bpy.ops.object.shade_smooth()
             
-            adjusted_distance = setup_camera_for_rendering(camera, combined_object)
+            adjusted_distance = setup_camera_for_rendering(camera, mesh_object)
             
             num_positions = 3
-            render_flexible_frames(combined_object.name, output_path, num_positions, adjusted_distance)
+            render_flexible_frames(subfolder_name, mesh_object.name, subfolder_output_path, num_positions, adjusted_distance)
             
-            render_stereoscopic_turntable(combined_object.name, output_path, total_frames, adjusted_distance, eye_distance)
+            render_stereoscopic_turntable(subfolder_name, mesh_object.name, subfolder_output_path, total_frames, adjusted_distance, eye_distance=0.1)
             
             # Ensure the object is removed correctly to avoid errors
             bpy.ops.object.select_all(action='DESELECT')
-            if combined_object.name in bpy.context.view_layer.objects:
-                bpy.data.objects.remove(bpy.context.view_layer.objects[combined_object.name])
-            print(f"Deleted {combined_object.name}.")
-        
-        # Clean up and remove imported objects to avoid overlap in the next iteration
+            bpy.context.view_layer.objects.active = None
+            
+            # Now, after all operations, delete the mesh object
+            bpy.data.objects.remove(mesh_object)
+            print(f"Deleted {mesh_object_name}.")
+                    
+        # Clean up and remove any leftover imported objects to avoid overlap in the next iteration
         bpy.ops.object.select_all(action='DESELECT')
         bpy.ops.object.select_by_type(type='MESH')
         bpy.ops.object.delete()
