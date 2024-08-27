@@ -323,7 +323,9 @@ for subfolder_name in os.listdir(main_folder_path):
             if mesh_file.endswith(".obj"):
                 bpy.ops.wm.obj_import(filepath=mesh_file_path)
             elif mesh_file.endswith(".stl"):
-                bpy.ops.import_mesh.stl(filepath=mesh_file_path)
+                bpy.ops.wm.stl_import(filepath=mesh_file_path)
+            elif mesh_file.endswith(".glb"):
+                bpy.ops.wm.gltf_import(filepath=mesh_file_path)
             print(f"Imported {mesh_file} successfully.")
             
             # Combine all imported objects into one
