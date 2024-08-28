@@ -65,6 +65,10 @@ def combine_objects():
     bpy.ops.object.select_by_type(type='MESH')
     bpy.ops.object.join()
 
+# Function to make mesh data unique
+def make_mesh_unique(mesh_object):
+    mesh_object.data = mesh_object.data.copy()
+
 # Function to render a frame from a specific camera position
 def render_frame(mesh_name, position_name, position, output_path):
     bpy.context.scene.render.image_settings.file_format = 'PNG'
@@ -78,6 +82,7 @@ def render_frame(mesh_name, position_name, position, output_path):
 
 # Function to fit the mesh into a defined bounding box
 def fit_mesh_to_bounding_box(mesh_object, target_size):
+    make_mesh_unique(mesh_object)  # Make the mesh data unique before applying transforms
     bpy.context.view_layer.objects.active = mesh_object
     bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='BOUNDS')
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
@@ -89,6 +94,7 @@ def fit_mesh_to_bounding_box(mesh_object, target_size):
 
 # Function to correct the orientation of the mesh if it is upside down
 def correct_mesh_orientation(mesh_object):
+    make_mesh_unique(mesh_object)  # Make the mesh data unique before applying transforms
     z_up_vector = Vector((0, 0, 1))
     up_axis = Vector((0, 0, 1))
     rotation = mesh_object.matrix_world.to_3x3().transposed()
@@ -152,7 +158,7 @@ def render_stereoscopic_turntable(subfolder_name, mesh_name, output_path, frame_
     # Render for the left eye
     print("Rendering for left eye")
     rotate_camera_around_mesh(camera, mesh_object, frame_count, radius, -eye_distance / 2)
-    left_eye_video = os.path.join(output_path, f"{subfolder_name}_{mesh_name}_turntable_left.mp4")
+    left_eye_video = os.path.join(output_path, f"{subfolder_name}{mesh_name}_turntable_left{eye_distance}mm.mp4")
     bpy.context.scene.render.filepath = left_eye_video
     bpy.ops.render.render(animation=True)
     print(f"Rendered 360-degree turntable for left eye of {mesh_name}")
@@ -160,57 +166,57 @@ def render_stereoscopic_turntable(subfolder_name, mesh_name, output_path, frame_
     # Render for the right eye
     print("Rendering for right eye")
     rotate_camera_around_mesh(camera, mesh_object, frame_count, radius, eye_distance / 2)
-    right_eye_video = os.path.join(output_path, f"{subfolder_name}_{mesh_name}_turntable_right.mp4")
+    right_eye_video = os.path.join(output_path, f"{subfolder_name}{mesh_name}_turntable_right{eye_distance}mm.mp4")
     bpy.context.scene.render.filepath = right_eye_video
     bpy.ops.render.render(animation=True)
     print(f"Rendered 360-degree turntable for right eye of {mesh_name}")
     
+    # Commented out side-by-side video generation
     # Combine left and right videos side-by-side using Compositor Nodes
-    bpy.context.scene.use_nodes = True
-    nodes = bpy.context.scene.node_tree.nodes
-    links = bpy.context.scene.node_tree.links
+    # bpy.context.scene.use_nodes = True
+    # nodes = bpy.context.scene.node_tree.nodes
+    # links = bpy.context.scene.node_tree.links
     
     # Clear existing nodes
-    for node in nodes:
-        nodes.remove(node)
+    # for node in nodes:
+    #     nodes.remove(node)
     
     # Add input nodes
-    left_movie = nodes.new(type="CompositorNodeMovieClip")
-    right_movie = nodes.new(type="CompositorNodeMovieClip")
+    # left_movie = nodes.new(type="CompositorNodeMovieClip")
+    # right_movie = nodes.new(type="CompositorNodeMovieClip")
     
     # Load the rendered videos
-    left_movie.clip = bpy.data.movieclips.load(left_eye_video)
-    right_movie.clip = bpy.data.movieclips.load(right_eye_video)
+    # left_movie.clip = bpy.data.movieclips.load(left_eye_video)
+    # right_movie.clip = bpy.data.movieclips.load(right_eye_video)
     
     # Add translate nodes to position the videos
-    translate_left = nodes.new(type="CompositorNodeTranslate")
-    translate_right = nodes.new(type="CompositorNodeTranslate")
+    # translate_left = nodes.new(type="CompositorNodeTranslate")
+    # translate_right = nodes.new(type="CompositorNodeTranslate")
     
     # Adjust translation to ensure proper side-by-side alignment
-    translate_left.inputs["X"].default_value = -bpy.context.scene.render.resolution_x // 2
-    translate_right.inputs["X"].default_value = bpy.context.scene.render.resolution_x // 2
+    # translate_left.inputs["X"].default_value = -bpy.context.scene.render.resolution_x // 2
+    # translate_right.inputs["X"].default_value = bpy.context.scene.render.resolution_x // 2
     
     # Add an alpha over node to combine the two inputs
-    alpha_over = nodes.new(type="CompositorNodeAlphaOver")
+    # alpha_over = nodes.new(type="CompositorNodeAlphaOver")
     
     # Add an output node
-    composite = nodes.new(type="CompositorNodeComposite")
+    # composite = nodes.new(type="CompositorNodeComposite")
     
     # Link nodes
-    links.new(left_movie.outputs["Image"], translate_left.inputs[0])
-    links.new(right_movie.outputs["Image"], translate_right.inputs[0])
-    links.new(translate_left.outputs["Image"], alpha_over.inputs[1])
-    links.new(translate_right.outputs["Image"], alpha_over.inputs[2])
-    links.new(alpha_over.outputs["Image"], composite.inputs["Image"])
+    # links.new(left_movie.outputs["Image"], translate_left.inputs[0])
+    # links.new(right_movie.outputs["Image"], translate_right.inputs[0])
+    # links.new(translate_left.outputs["Image"], alpha_over.inputs[1])
+    # links.new(translate_right.outputs["Image"], alpha_over.inputs[2])
+    # links.new(alpha_over.outputs["Image"], composite.inputs["Image"])
     
     # Set output path for side-by-side video
-    bpy.context.scene.render.filepath = os.path.join(output_path, f"{mesh_name}_turntable_side_by_side.mp4")
-    bpy.context.scene.render.resolution_x *= 2  # Double width for side-by-side video
+    # bpy.context.scene.render.filepath = os.path.join(output_path, f"{mesh_name}_turntable_side_by_side.mp4")
+    # bpy.context.scene.render.resolution_x *= 2  # Double width for side-by-side video
     
     # Render the combined video
-    bpy.ops.render.render(animation=True)
-    print(f"Rendered side-by-side stereoscopic turntable for {mesh_name}")
-
+    # bpy.ops.render.render(animation=True)
+    # print(f"Rendered side-by-side stereoscopic turntable for {mesh_name}")
 
 # Function to generate flexible camera positions
 def generate_camera_positions(n, distance):
@@ -238,16 +244,17 @@ bpy.context.scene.render.fps = frame_rate
 bpy.context.scene.render.resolution_x = 1280
 bpy.context.scene.render.resolution_y = 720
 
-# Use Eevee render engine
-bpy.context.scene.render.engine = 'BLENDER_EEVEE'
+# Use Cycles render engine (comment out to switch to Eevee)
+bpy.context.scene.render.engine = 'CYCLES'
+bpy.context.scene.cycles.samples = 128  # Adjust for desired quality
+bpy.context.scene.cycles.use_adaptive_sampling = True  # Enable adaptive sampling
 
-# Disable Ambient Occlusion, Bloom, and Screen Space Reflections to avoid any indirect shadowing effects
-bpy.context.scene.eevee.use_gtao = False
-bpy.context.scene.eevee.use_bloom = False
-bpy.context.scene.eevee.use_ssr = False
-
-# Set the number of samples for rendering (Eevee specific)
-bpy.context.scene.eevee.taa_render_samples = 64  # Adjust for desired quality
+# # Use Eevee render engine (uncomment to use)
+# bpy.context.scene.render.engine = 'BLENDER_EEVEE'
+# bpy.context.scene.eevee.taa_render_samples = 64  # Adjust for desired quality
+# bpy.context.scene.eevee.use_gtao = False  # Disable Ambient Occlusion
+# bpy.context.scene.eevee.use_bloom = False  # Disable Bloom
+# bpy.context.scene.eevee.use_ssr = False  # Disable Screen Space Reflections
 
 # Set up the HDRI environment lighting
 setup_hdri_lighting(hdri_path)
@@ -358,7 +365,9 @@ for subfolder_name in os.listdir(main_folder_path):
             num_positions = 3
             render_flexible_frames(subfolder_name, mesh_object.name, subfolder_output_path, num_positions, adjusted_distance)
             
-            render_stereoscopic_turntable(subfolder_name, mesh_object.name, subfolder_output_path, total_frames, adjusted_distance, eye_distance=0.1)
+            # Render stereoscopic turntables for different IODs
+            for iod in [55, 60, 65]:
+                render_stereoscopic_turntable(subfolder_name, mesh_object.name, subfolder_output_path, total_frames, adjusted_distance, eye_distance=iod / 1000)
             
             # Ensure the object is removed correctly to avoid errors
             bpy.ops.object.select_all(action='DESELECT')
