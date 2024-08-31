@@ -154,7 +154,7 @@ def render_stereoscopic_turntable(subfolder_name, mesh_name, output_path, frame_
     # Set common render settings
     bpy.context.scene.render.image_settings.file_format = 'FFMPEG'
     bpy.context.scene.render.ffmpeg.format = 'MPEG4'
-    bpy.context.scene.render.ffmpeg.codec = H264'  # AV1
+    bpy.context.scene.render.ffmpeg.codec = 'H264'  # AV1
     bpy.context.scene.render.ffmpeg.constant_rate_factor = 'MEDIUM' # LOSSLESS, HIGH, PERC_LOSELESS, MEDIUM, LOW, LOWEST
     bpy.context.scene.render.ffmpeg.ffmpeg_preset = 'BEST'  #BEST, GOOD, REALTIME
 
