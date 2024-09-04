@@ -169,7 +169,7 @@ chestnut, etc.
 
 
 
-# 2.Copy and Paste the Script:
+2.Copy and Paste the Script:
 ○Copy the entire content of the script you intend to run.
 ○Paste it into the text editor panel in Blender.
 
