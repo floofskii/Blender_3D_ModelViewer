@@ -126,7 +126,9 @@ To effectively run the Blender automation script and process your 3D models, fol
 ○Inside the input folder, create subfolders for each set of 3D models you wish to process. For example, you might have subfolders like buddha, dragon,
 chestnut, etc.
 ○Place the corresponding 3D mesh files (.obj, .stl, .glb) inside these subfolders.
+
 ![image](https://github.com/user-attachments/assets/7ebed5d4-4ce8-48a2-9669-3700a09d71df)
+
 
 
 
@@ -134,7 +136,9 @@ chestnut, etc.
 ○Place your HDRI map file inside the input folder. This file will be used to create realistic environmental lighting in Blender.
 3.Output Folder:
 ○Create an output folder in your desired location. The script will automatically organise the rendered images and videos into subfolders within this directory, matching the structure of your input folder.
+
 ![image](https://github.com/user-attachments/assets/816506da-c162-432b-8468-5a83d196826c)
+
 
 
 
@@ -146,6 +150,7 @@ chestnut, etc.
 2.Split the Screen:
 ○Right-click on the horizontal line at the top of the Blender window.
 ○Select Vertical Split to create a split-screen setup in Blender. This will allow you to have two panels open simultaneously: one for the text editor and one for viewing the scene.
+
 ![image](https://github.com/user-attachments/assets/75aa7cbc-ea88-4ec2-bf81-85368acd4537)
 
 
@@ -154,6 +159,7 @@ chestnut, etc.
 
 1.Text Editor Panel:
 ○In one of the panels, switch to the Text Editor by clicking the editor type dropdown (top-left corner of the panel) and selecting Text Editor.
+
 ![image](https://github.com/user-attachments/assets/7b426253-f091-4e5f-a7a4-b84122d01fd5)
 
 
@@ -167,7 +173,9 @@ chestnut, etc.
 1.Clear Existing Objects:
 ○In the other panel (3D Viewport), select all the existing objects in the scene, including lights, cameras, and any default objects.
 ○Press X to delete them, ensuring that the scene is empty and ready for the script to load the new meshes and set up the environment.
+
 ![image](https://github.com/user-attachments/assets/7d1305fa-62f6-4728-8b64-254e5f17b4d0)
+
 
 
 
@@ -176,6 +184,7 @@ chestnut, etc.
 1.Execute the Script:
 ○Go back to the text editor panel.
 ○At the top of the panel, click on the Run Script button. This action will start the automated process.
+
 ![image](https://github.com/user-attachments/assets/4e756ae7-613e-43ca-94cd-95e8c8b330a9)
 
 
