@@ -7,10 +7,15 @@ This script is designed to automate the process of rendering 3D models in Blende
 
 # Key Features:
 ·Batch Processing: The script processes multiple 3D models stored in subfolders.
+
+
 ·HDRI Lighting Setup: Utilises an HDRI file to create realistic environment lighting.
 ·Mesh Manipulation: Includes functions to fit the mesh within a bounding box, correct orientation, and apply smooth shading.
+
 ·Camera and Lighting: Sets up camera positions, adjusts distance dynamically, and applies various types of lighting (area, sun, and point lights).
+
 ·Rendering: Produces single-frame renders from multiple angles and creates stereoscopic turntable animations for 3D models.
+
 ·Output Management: Automatically organises rendered images and videos into corresponding output directories.
 
 # Workflow
@@ -201,31 +206,37 @@ chestnut, etc.
 
 ●Description:
 ○This is the main script with detailed comments explaining each function. It includes all the advanced features necessary for batch processing 3D models, applying HDRI lighting, setting up camera positions, and rendering both still images and turntable animations.
+
 ○The script is fully documented, making it easy to understand how each part works and how to modify it if needed.
+
 ●Key Features:
 ○HDRI Lighting: Setup for realistic environmental lighting.
 ○Mesh Processing: Fits meshes within a bounding box, corrects orientation, and applies smooth shading.
 ○Rendering:
-■Normal Rendering: Generates still images from multiple camera angles.
-■Stereoscopic Rendering: Creates stereoscopic turntable animations, offering a 3D effect by rendering the scene from slightly different
+
+■ Normal Rendering: Generates still images from multiple camera angles.
+
+■ Stereoscopic Rendering: Creates stereoscopic turntable animations, offering a 3D effect by rendering the scene from slightly different
 angles for each eye.
-○Output Management: Automatically organizes rendered outputs into directories.
+
+○ Output Management: Automatically organizes rendered outputs into directories.
 
 2.The Old_script.py: The Basic Script
 
 ●Description:
+ 
 ○This is a simplified version of the script with fewer features. It focuses on basic mesh processing and rendering, without some of the advanced features like HDRI lighting and detailed output management.
-●Key Features:
-○Basic Rendering: Processes and renders single frames from different angles.
-○Turntable Animation: Simple turntable animation rendering for 3D models.
+● Key Features:
+○ Basic Rendering: Processes and renders single frames from different angles.
+○ Turntable Animation: Simple turntable animation rendering for 3D models.
 This script does not include stereoscopic rendering.
 
 3.The multiplemesh_codesnippet.py: The Rough Code Snippet
 
-●Description:
+● Description:
 ○This script snippet is a preliminary version that loops through multiple meshes for batch processing. It's a rough version used to develop and test the multiple mesh processing functionality.
 
-●Key Features:
+● Key Features:
 ○Multiple Mesh Processing: Handles the import and processing of multiple mesh files within a directory.
 ○Basic Camera Setup: Configures camera positions and renders images from different angles. This script also does not include stereoscopic rendering.
 
