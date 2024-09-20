@@ -5,6 +5,9 @@
 Overview
 This script is designed to automate the process of rendering 3D models in Blender. It processes multiple 3D mesh files (.obj, .stl, .glb) located in subfolders, applies lighting and camera settings, and generates images and stereoscopic turntable animations from various angles. The rendered outputs are saved in a specified directory, making this script ideal for batch processing and visualisation tasks.
 
+# Sample outputs from Blender
+Following is the link to some of the samples https://drive.google.com/drive/folders/1E3IAHsKBfEpQiVJMtnYZKEXsraxTeyG-
+
 # Key Features:
 ·Batch Processing: The script processes multiple 3D models stored in subfolders.
 
