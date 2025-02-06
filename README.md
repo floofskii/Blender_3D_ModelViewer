@@ -7,6 +7,7 @@ This script is designed to automate the process of rendering 3D models in Blende
 
 # Sample outputs from Blender
 Following is the link to some of the few sample outputs https://drive.google.com/drive/folders/1PUWFxE7ibB9Ra_LHtjGqCwZszc2Jw-Pz?usp=sharing
+
 Documentation: https://docs.google.com/document/d/1F3NJazfMoMKmt8LHTUaDXNcM0oVuNI7mTQNF7NfjHN8/edit?usp=sharing
 
 
